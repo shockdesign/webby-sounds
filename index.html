@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset=utf-8>
+        <title>Webby Sounds</title>
+        <style>
+            body { margin: 0; }
+            canvas { width: 100%; height: 100% }
+        </style>
+    </head>
+    <body>
+        <button class="record">Record</button>
+        <audio class="sample"></audio>
+        <script>
+            // a,s,d,f,g,h,j,k,l
+            // e,f,g,a,b,c,d,e,f
+
+            navigator.getUserMedia = ( navigator.getUserMedia ||
+                       navigator.webkitGetUserMedia ||
+                       navigator.mozGetUserMedia ||
+                       navigator.msGetUserMedia);
+
+            if (navigator.getUserMedia) {
+                console.log('getUserMedia is supported');
+                var record = document.querySelector('.record');
+                var sample = document.querySelector('.sample');
+                var chunks = [];
+                var recording = false;
+                var onSuccess = function(stream) {
+                    console.log('Lets set up everything now we know we can record');
+                    var mediaRecorder = new MediaRecorder(stream);
+
+                    record.onclick = function() {
+                        if (recording) {
+                            mediaRecorder.stop();
+                            record.style.background = "";
+                            recording = false;
+                        } else {
+                            mediaRecorder.start();
+                            record.style.background = "red";
+                            recording = true;
+                        }
+                    }
+
+                    mediaRecorder.onstop = function(e) {
+                        console.log('We have some recorded data');
+                        var blob = new Blob(chunks, { 'type' : 'audio/ogg; codecs=opus' });
+                        chunks = [];
+                        var audioURL = window.URL.createObjectURL(blob);
+                        sample.src = audioURL;
+                    }
+
+                    mediaRecorder.ondataavailable = function(e) {
+                        console.log('That recorded data is now available');
+                        chunks.push(e.data);
+                    }
+
+                    document.onkeydown = function(evt) {
+                        evt = evt || window.event;
+                        console.log('' + evt.keyCode);
+                        if (sample.src) {
+                            sample.play();
+                        }
+                    }
+                }
+
+                var onError = function(err) {
+                    console.log('The following error occured: ' + err);
+                }
+
+                navigator.getUserMedia({audio:true}, onSuccess, onError);
+            } else {
+                console.log('No go zone here');
+            }
+        </script>
+    </body>
+</html>
